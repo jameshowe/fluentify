@@ -2,7 +2,7 @@
   "name": "fluentify",
   "version": "1.0.0",
   "license": "MIT",
-  "description": "A lightweight Facebook Flux library.",
+  "description": "Tiny, stateful, fluent decorator for JavaScript objects",
   "repository": "https://github.com/jameshowe/fluentify",
   "author": "James Howe",
   "main": "fluentify.js",
