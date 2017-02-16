@@ -1,0 +1,12 @@
+{
+  "name": "fluentify",
+  "version": "1.0.0",
+  "license": "MIT",
+  "description": "A lightweight Facebook Flux library.",
+  "repository": "https://github.com/jameshowe/fluentify",
+  "author": "James Howe",
+  "main": "fluentify.js",
+  "dependencies": {
+    "async": "^1.4.2"
+  }
+}
