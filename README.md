@@ -1,2 +1,2 @@
 # fluentify
-Fluent wrapper for any JavaScript object
+Tiny, stateful, fluent decorator for JavaScript objects
