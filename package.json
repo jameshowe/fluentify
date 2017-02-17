@@ -6,7 +6,15 @@
   "repository": "https://github.com/jameshowe/fluentify",
   "author": "James Howe",
   "main": "fluentify.js",
+  "scripts": {
+    "test": "`npm bin`/mocha tests/* --reporter spec"
+  },
   "dependencies": {
     "async": "^1.4.2"
+  },
+  "devDependencies": {
+    "chai": "^3.5.0",
+    "mocha": "^3.2.0",
+    "sinon": "^1.17.7"
   }
 }
