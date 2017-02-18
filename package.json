@@ -1,8 +1,8 @@
 {
-  "name": "fluentify",
+  "name": "fluentifyjs",
   "version": "1.0.0",
   "license": "MIT",
-  "description": "Tiny, stateful, fluent decorator for JavaScript objects",
+  "description": "A tiny fluent interface decorator for JavaScript objects",
   "repository": "https://github.com/jameshowe/fluentify",
   "author": "James Howe",
   "main": "fluentify.js",
