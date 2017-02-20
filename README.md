@@ -150,8 +150,8 @@ _In the above example, `$3` would resolve to `{ width: ..., height: ... }`_
 
 ## Bugs :beetle:
 
-As much as us developers hate to admit it, sometimes our code doesn't always work as intended :disappointed: If you happen to find a bug with `fluentify` please raise an [issue](https://github.com/jameshowe/fluentify/issues) and I'll do my best to convince you it's by design!
+As much as us developers hate to admit it, sometimes our code doesn't always work as intended :disappointed: If you happen to find a bug with Fluentify please raise an [issue](https://github.com/jameshowe/fluentify/issues) and I'll do my best to convince you it's by design!
 
 ## Contribute :construction:
 
-There are lots of things to like about `fluentify`, however, there is always room for improvement. More than happy to accept PRs as long as the change is for the greater good and, of course, includes covering tests.
+There are lots of things to like about Fluentify, however, there is always room for improvement. More than happy to accept PRs as long as the change is for the greater good and, of course, includes covering tests.
