@@ -1,6 +1,6 @@
 {
   "name": "fluentifyjs",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "license": "MIT",
   "description": "A tiny fluent interface decorator for JavaScript objects",
   "repository": "https://github.com/jameshowe/fluentify",
