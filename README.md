@@ -9,7 +9,7 @@ A tiny fluent interface decorator for JavaScript objects.
 npm install fluentifyjs
 ```
 
-## Usage:bulb:
+## Usage :book:
 
 In simple terms, Fluentify works by allowing you to chain an objects method calls e.g.
 ```
@@ -148,7 +148,7 @@ api
   .setArea('$3')
   .done(...);
 ```
-_In the above example, `$3` would resolve `{ width: ..., height: ... }`_
+_In the above example, `$3` would resolve to `{ width: ..., height: ... }`_
 
 ## Bugs :beetle:
 
