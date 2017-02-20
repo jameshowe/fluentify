@@ -40,7 +40,7 @@ Results are bound as explicit parameters per function call with each result bein
   console.log(bar[0]); // bar result
 });
 ```
-*Tip:bulb: - in scenarios where you have lots of resultsets you can make use the [spread operator](https://developer.mozilla.org/en/docs/Web/JavaScript/Reference/Operators/Spread_operator) (ES6 feature) to bundle up your results into an array, or alternatively the [arguments object](https://developer.mozilla.org/en/docs/Web/JavaScript/Reference/Functions/arguments) which isn't as neat but more widely supported.*
+*Tip:bulb: - in scenarios where you have lots of result you can make use of the [spread operator](https://developer.mozilla.org/en/docs/Web/JavaScript/Reference/Operators/Spread_operator) (ES6 feature) to bundle up your results into an array, or alternatively the [arguments object](https://developer.mozilla.org/en/docs/Web/JavaScript/Reference/Functions/arguments).*
 
 If an error occurs at any point the chain is broken and any remaining functions in the queue are discarded without execution.
 
@@ -48,9 +48,9 @@ _"How does Fluentify know what return values to store for each call?"_ - another
 
 ### callback(err, result)
 
-For each function in the chain Fluentify expects the final argument to be a callback. This callback is used to indicate the end of the function and to propogate any related data or error(s).
+For each function in the chain Fluentify expects the final argument to be a callback. This callback is used to indicate the end of the function and can be used to propogate any return value(s) or error(s).
 
-Given how typical callbacks are in JavaScript, Fluentify has a pretty good idea of what that's going to look like and is more than happy to take care of that boilerplate code for you. In otherwords, if no callback parameter is passed to the call Fluentify will inject a virtual one for you! Neat huh?
+Given how standardised callbacks are these days in JavaScript Fluentify is smart enough figure out what your callback should look like. Therefore, it's not necessary to explicitly pass a callback to each function because Fluentify will inject a virtual one for you!
 
 #### Example - virtual callback
 
@@ -76,9 +76,9 @@ fluentObj
     console.log(results[1][0]); // bar
   });
 ```
-_Notice in the above example we didn't pass a callback to either `foo` or `bar` calls_
+_Notice in the above example we didn't pass a callback to either `foo` or `bar`_
 
-With that being said, sometimes you will want to explicitly pass a callback e.g. maybe you want to do some pre-processing to the return value or dump some logs. Fluentify supports that to!
+With that being said, sometimes you may want to explicitly pass a callback e.g. perhaps you want to do some pre-processing on the return value or dump some logs, Fluentify supports that to!
 
 #### Example - explicit callback
 ```
@@ -90,9 +90,7 @@ fluentObj
     console.log(results[1][0]); // foobar
   });
 ```
-The most important point to note in the above example is the `cb` parameter in our callback. Similar to how Fluentify injects a virtual callback into the calling functions parameters when it doesn't find one, when it _does_ find one it injects a virtual callback into it's parameters instead which you must call to resume processing the queue. 
-
-The reason for this is pretty simple, when you override the callback you [take control away](https://www.youtube.com/watch?v=-dJolYw8tnk) from Fluentify because it can't be sure what's going on in there e.g. you might make an asynchronous call and need to wait for a reply or maybe you just need to do some stuff synchronously - we just don't know! So to remove any doubt, the callback is provided as a means of letting Fluentify know that your _definitely_ done so it can resume processing the remainder of the queue.
+The most important point to note in the above example is the `cb` parameter in the callback. By passing an explicit callback you [take control away](https://www.youtube.com/watch?v=-dJolYw8tnk) from Fluentify because it can't be sure what's going on in there e.g. you might make an asynchronous call and need to wait for a reply or maybe you just need to do some stuff synchronously - we just don't know! So to remove any doubt, a callback is provided as a means of letting Fluentify know when your done so it can resume processing the remainder of the queue.
 
 ### Accessing results
 
