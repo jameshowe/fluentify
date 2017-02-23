@@ -1,7 +1,9 @@
 # Fluentify
 A tiny fluent interface decorator for JavaScript objects.
 
-[![Build Status](https://travis-ci.org/jameshowe/fluentify.svg?branch=master)](https://travis-ci.org/jameshowe/fluentify)
+[![Build Status](https://travis-ci.org/jameshowe/fluentify.svg?branch=master)](https://travis-ci.org/jameshowe/fluentify) [![fluentifyjs - Downloads Total](https://img.shields.io/npm/dt/fluentifyjs.svg)](https://www.npmjs.com/package/fluentifyjs) [![fluentifyjs - Version](https://img.shields.io/npm/v/fluentifyjs.svg)](https://www.npmjs.com/package/fluentifyjs) [![fluentifyjs - License](https://img.shields.io/npm/l/fluentifyjs.svg)](https://www.npmjs.com/package/fluentifyjs)
+
+
 
 ## Install :nut_and_bolt:
 
@@ -190,4 +192,4 @@ There are lots of things to like about Fluentify, however, there is always room 
 
 ## License
 
-This project is released under the terms of the [MIT license](https://github.com/jameshowe/fluentify/blob/master/LICENSE).
+This library is released under the terms of the [MIT license](https://github.com/jameshowe/fluentify/blob/master/LICENSE).
