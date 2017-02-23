@@ -140,4 +140,78 @@ describe('Fluentify API', () => {
 		});
 	});
 
+	describe('FQL', () => {
+
+		it('binds full result to parameter', async () => {
+			const obj = fluentify({
+				inc(value, cb) {
+					return cb(null, value + 1);
+				}
+			});
+			const results = await obj
+				.inc(9)
+				.inc('$1')
+				.inc('$2')
+				.inc('$3')
+				.done();
+			expect(results).to.eql([[10], [11], [12], [13]])
+		});
+
+		it('binds result property to parameter', async () => {
+			const api = fluentify({
+				init(cb) {
+					return cb(null, {
+						path: '0',
+						child: {
+							path: '0.0',
+							child: {
+								path: '0.0.0'
+							}
+						}
+					});
+				},
+				foo(val, cb) {
+					return cb(null, val);
+				}
+			});
+
+			const results = await api
+				.init()
+				.foo('$1.path')
+				.foo('$1.child.path')
+				.foo('$1.child.child.path')
+				.done();
+			expect(results[1][0]).to.equal('0');
+			expect(results[2][0]).to.equal('0.0');
+			expect(results[3][0]).to.equal('0.0.0');
+		});
+
+		it('binds result array property to parameter', async () => {
+			const api = fluentify({
+				init(cb) {
+					return cb(null, {
+						children: ['0', {
+							children: ['0.0', {
+								children: ['0.0.0']
+							}]
+						}]
+					});
+				},
+				foo(val, cb) {
+					return cb(null, val);
+				}
+			});
+
+			const results = await api
+				.init()
+				.foo('$1.children.0')
+				.foo('$1.children.1.children.0')
+				.foo('$1.children.1.children.1.children.0')
+				.done();
+			expect(results[1][0]).to.equal('0');
+			expect(results[2][0]).to.equal('0.0');
+			expect(results[3][0]).to.equal('0.0.0');
+		});
+	})
+
 });

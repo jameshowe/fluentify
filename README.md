@@ -142,7 +142,7 @@ FQL supports deep indexing into the object tree. For example, lets assume we onl
 
 It also supports indexing into array properties by denoting the index of the item in the array as if it were a property e.g. `$1.list.0`.
 
-_Note - there are no limitations on how deep query into the object tree, however, please bear in mind that there is work involved in parsing & traversing so performance may be impacted_
+_Note - there are no limitations on how deep you can query into the object tree, however, please bear in mind that there is work involved in parsing & traversing so performance may be impacted_
 
 #### results(resultset, cb)
 
@@ -180,8 +180,6 @@ api
 ```
 _Note - first parameter of `consolidate` would be `"foobar"`_
 
-And that's all folks! If you have any questions or aren't quite sure about how to use the library please get in touch, I'll be happy to help.
-
 ## Bugs :beetle:
 
 As much as us developers hate to admit it, sometimes our code doesn't always work as intended :disappointed: If you happen to find a bug with Fluentify please raise an [issue](https://github.com/jameshowe/fluentify/issues) and I'll do my best to convince you it's by design!
@@ -189,3 +187,7 @@ As much as us developers hate to admit it, sometimes our code doesn't always wor
 ## Contribute :construction:
 
 There are lots of things to like about Fluentify, however, there is always room for improvement. More than happy to accept PRs as long as the change is for the greater good and, of course, includes covering tests.
+
+## License
+
+This project is released under the terms of the [MIT license](https://github.com/jameshowe/fluentify/blob/master/LICENSE).

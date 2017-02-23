@@ -1,5 +1,7 @@
 // assume array if arr.length (support for arguments)
 const _getLast = arr => arr && arr.length ? arr[arr.length-1] : null
+const _isNumeric = val => typeof val === 'number' && !Number.isNaN(val);
+const _isFunc = func => typeof func === 'function';
 
 class FluentSession {
 
@@ -9,24 +11,20 @@ class FluentSession {
   }
 
   _invokeFunc(func, args) {
-    if (typeof func === 'function') {
-      if (!(args instanceof Array)) {
-        args = [args];
-      }
-      return func.apply(null, args);
-    }
+    if (!_isFunc(func)) return;
+    return func.apply(null, args instanceof Array ? args : [args]);
   }
 
   _bindResults(target) {
     for (let i = 0; i < target.length; i++) {
+      const arg = target[i];
       // detect result ref parmeters
       if (typeof arg === 'string' && !arg.indexOf('$')) {
         const propPath = arg.split('.');
         // extract index
         const indexStr = propPath.shift();
-        // no need to -1 on the index, we want to skip the first result
-        const index = Number.parseInt(indexStr.substring(1), 10);
-        if (!Number.isNaN(index) && index < this._results.length) {
+        let index = Number.parseInt(indexStr.substring(1), 10);
+        if (_isNumeric(index) && --index < this._results.length) {
           let argValue = this._results[index];
           // unpack single resultsets
           if (argValue && argValue.length === 1) {
@@ -34,7 +32,7 @@ class FluentSession {
           }
           // traverse result based on path
           for (let prop of propPath) {
-            prop = !Number.isNaN(prop) ? Number.parseInt(prop) : prop;
+            prop = _isNumeric(prop) ? Number.parseInt(prop, 10) : prop;
             argValue = argValue[prop];
             if (!argValue) {
               break;
@@ -49,11 +47,9 @@ class FluentSession {
   queue(func, args) {
     this._queue.push(() => new Promise((resolve, reject) => {
       this._bindResults(args);
-      let callback = (err, ...results) => {
-        err ? reject(err) : resolve(results);
-      };
+      let callback = (err, ...results) => err ? reject(err) : resolve(results);
       const lastArg = _getLast(args);
-      if (typeof lastArg === 'function') {
+      if (_isFunc(lastArg)) {
         // override user defined callback to trigger fluent callback
         // with parameters
         args.pop();
@@ -89,7 +85,7 @@ class FluentSession {
         return reject(e);
       }
     });
-    if (typeof cb === 'function') {
+    if (_isFunc(cb)) {
       p.then(r => cb.apply(null, [null].concat(r))).catch(cb);
     } else {
       return p;
@@ -109,7 +105,7 @@ const fluentify = obj => {
   for (const prop in obj) {
     const func = obj[prop];
     // exclude non-function / private props
-    if (typeof func === 'function' && prop.indexOf('_') !== 0) {
+    if (_isFunc(func) && prop.indexOf('_') !== 0) {
       obj[prop] = _wrapFunc(obj, func);
     }
   }
