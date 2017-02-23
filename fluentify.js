@@ -1,117 +1,113 @@
-var async = require('async');
+// assume array if arr.length (support for arguments)
+const _getLast = arr => arr && arr.length ? arr[arr.length-1] : null
 
-function _getLast(arr) {
-  // assume array if arr.length (support for arguments)
-  return arr && arr.length ? arr[arr.length-1] : null;
-}
+class FluentSession {
 
-function _startSession() {
-  return {
-    _queue: [],
-    _results: [],
-    _invokeFunc(func, args) {
-      if (typeof func === 'function') {
-        if (!(args instanceof Array)) {
-          args = [args];
-        }
-        return func.apply(null, args);
+  constructor() {
+    this._queue = [];
+    this._results = [];
+  }
+
+  _invokeFunc(func, args) {
+    if (typeof func === 'function') {
+      if (!(args instanceof Array)) {
+        args = [args];
       }
-    },
-    _bindResults(target) {
-      for (var i = 0; i < target.length; i++) {
-        var arg = target[i];
-        // detect result ref parmeters
-        if (typeof arg === 'string' && arg.indexOf('$') === 0) {
-          var propPath = arg.split('.');
-          // extract index
-          var indexStr = propPath.shift();
-          // no need to -1 on the index, we want to skip the first result
-          var index = parseInt(indexStr.substring(1));
-          if (!isNaN(index) && index < this._results.length) {
-            var argValue = this._results[index];
-            // unpack single resultsets
-            if (argValue && argValue.length === 1) {
-              argValue = argValue[0];
-            }
-            // traverse result based on path
-            for (var x = 0; x < propPath.length; x++) {
-              var prop = propPath[x];
-              prop = !isNaN(prop) ? parseInt(prop) : prop;
-              argValue = argValue[prop];
-              if (!argValue) {
-                break;
-              }
-            }
-            target[i] = argValue;
-          }
-        }
-      }
-    },
-    _flush() {
-      this._queue = [];
-      this._results = [];
-    },
-    queue(func, args) {
-      // insert at the front of the queue
-      this._queue.unshift((...prevArgs) => {
-        // store results from prev call
-        var callback = prevArgs.pop();
-        this._results.push(prevArgs);
-        // bind result refs from args
-        this._bindResults(args);
-        var lastArg = _getLast(args);
-        if (typeof lastArg === 'function') {
-          // override user defined callback to trigger fluent callback
-          // with parameters
-          args.pop();
-          var finalCallback = callback;
-          callback = (...newArgs) => {
-            newArgs.push(finalCallback);
-            lastArg.apply(null, newArgs);
-          };
-        }
-        // inject fluent callback into func params
-        args.push(callback);
-        this._invokeFunc(func, args);
-      });
-    },
-    results(cb) {
-      // take a copy of current results
-      var results = this._results.slice();
-      // remove initial result which is always null
-      results.shift();
-      this._invokeFunc(cb, [results]);
-    },
-    done(cb) {
-      async.compose.apply(null, this._queue)(null, (err, ...args) => {
-        if (err) {
-          setTimeout(() => cb.apply(null, [err]));
-        } else {
-          // remove initial result which will alway be null
-          this._results.shift();
-          // store final args
-          this._results.push(args);
-          // process final callback on next run loop so we can flush the queue
-          var results = this._results.slice();
-          setTimeout(() => cb.apply(null, [err].concat(results)));
-        }
-        this._flush();
-      });
+      return func.apply(null, args);
     }
-  };
+  }
+
+  _bindResults(target) {
+    for (let i = 0; i < target.length; i++) {
+      // detect result ref parmeters
+      if (typeof arg === 'string' && !arg.indexOf('$')) {
+        const propPath = arg.split('.');
+        // extract index
+        const indexStr = propPath.shift();
+        // no need to -1 on the index, we want to skip the first result
+        const index = Number.parseInt(indexStr.substring(1), 10);
+        if (!Number.isNaN(index) && index < this._results.length) {
+          let argValue = this._results[index];
+          // unpack single resultsets
+          if (argValue && argValue.length === 1) {
+            argValue = argValue[0];
+          }
+          // traverse result based on path
+          for (let prop of propPath) {
+            prop = !Number.isNaN(prop) ? Number.parseInt(prop) : prop;
+            argValue = argValue[prop];
+            if (!argValue) {
+              break;
+            }
+          }
+          target[i] = argValue;
+        }
+      }
+    }
+  }
+
+  queue(func, args) {
+    this._queue.push(() => new Promise((resolve, reject) => {
+      this._bindResults(args);
+      let callback = (err, ...results) => {
+        err ? reject(err) : resolve(results);
+      };
+      const lastArg = _getLast(args);
+      if (typeof lastArg === 'function') {
+        // override user defined callback to trigger fluent callback
+        // with parameters
+        args.pop();
+        const fluentCallback = callback;
+        callback = (...args) => {
+          args.push(fluentCallback);
+          lastArg.apply(null, args);
+        }
+      }
+      // inject virtual callback into func params
+      args.push(callback);
+      this._invokeFunc(func, args);
+    }));
+  }
+
+  async _processQueue() {
+    this._results = [];
+    for (let p; p = this._queue.shift(); ) {
+      this._results.push(await p());
+    }
+  }
+
+  results(cb) {
+    this._invokeFunc(cb, [this._results.slice()]);
+  }
+
+  done(cb) {
+    let p = new Promise(async (resolve, reject) => {
+      try {
+        await this._processQueue();
+        return resolve(this._results.slice());
+      } catch (e) {
+        return reject(e);
+      }
+    });
+    if (typeof cb === 'function') {
+      p.then(r => cb.apply(null, [null].concat(r))).catch(cb);
+    } else {
+      return p;
+    }
+  }
 }
 
-function _fluentWrapper(obj) {
+const fluentify = obj => {
   if (obj.hasOwnProperty('results')) console.warn('[Fluentify] "results" property will be overridden');
   if (obj.hasOwnProperty('done')) console.warn('[Fluentify] "done" property will be overridden');
-  var session = _startSession();
-  var _wrapFunc = (context, func) => (...args) => {
-      session.queue((...args) => func.apply(context, args), args);
-      return obj;
-    };
+  const session = new FluentSession();
+  const _wrapFunc = (context, func) => (...args) => {
+    session.queue((...args) => func.apply(context, args), args);
+    return obj;
+  };
   // wrap functions
-  for (var prop in obj) {
-    var func = obj[prop];
+  for (const prop in obj) {
+    const func = obj[prop];
     // exclude non-function / private props
     if (typeof func === 'function' && prop.indexOf('_') !== 0) {
       obj[prop] = _wrapFunc(obj, func);
@@ -122,4 +118,4 @@ function _fluentWrapper(obj) {
   return obj;
 }
 
-module.exports = _fluentWrapper;
+module.exports = fluentify;

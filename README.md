@@ -15,12 +15,12 @@ In simple terms, Fluentify works by allowing you to chain an objects method call
 ```
 const fluentify = require('fluentifyjs');
 
-const fluentObj = fluentify({
+const api = fluentify({
   foo() {},
   bar() {}
 });
 
-fluentObj
+api
   .foo()
   .bar()
   .done();
@@ -29,35 +29,44 @@ _"Wait a minute, where did `done` come from?"_ - good question!
 
 ### done(err, ...results)
 
-`done` is a function automagically attached to the object by Fluentify and is used to indicate the end of the chain. When each function in the chain is called, rather than being executed, it's added to an internal queue. When `done` is called Fluentify effectively "flushes" the queue invoking each function in order and keeping track of any return values.
+`done` is a function attached to the object by Fluentify and is used to indicate the end of the chain. When each function in the chain is called, rather than being executed, it's added to an internal queue. When `done` is called, Fluentify will purge the queue invoking each function in the correct order, keeping track of any return values.
 
 _Note - if a `done` property already exists on the object it will be overwritten_
 
-Results are bound as explicit parameters per function call with each result being in the form of an array. For example, if `foo` and `bar` yielded results in the example above your `done` call may look something like:
+Each result is passed to `done` as an explicit parameter as an array. For example, if `foo` and `bar` yield results your `done` call may look like:
 ```
 .done((err, foo, bar) => {
   console.log(foo[0]); // foo result
   console.log(bar[0]); // bar result
 });
 ```
-*Tip:bulb: - in scenarios where you have lots of result you can make use of the [spread operator](https://developer.mozilla.org/en/docs/Web/JavaScript/Reference/Operators/Spread_operator) (ES6 feature) to bundle up your results into an array, or alternatively the [arguments object](https://developer.mozilla.org/en/docs/Web/JavaScript/Reference/Functions/arguments).*
+*Tip:bulb: - in scenarios where you have lots of result you can make use of the [spread operator](https://developer.mozilla.org/en/docs/Web/JavaScript/Reference/Operators/Spread_operator) (ES6 feature) to bundle up your results into an array, or alternatively you can use the [arguments object](https://developer.mozilla.org/en/docs/Web/JavaScript/Reference/Functions/arguments).*
 
-If an error occurs at any point the chain is broken and any remaining functions in the queue are discarded without execution.
+If an error occurs at any point during the chain, `done` is invoked immediately and any remaining function calls are discarded.
+
+#### Promise support
+
+Prefer a Promise over a callback? Simply omit the callback from your `done` call and Fluentify will return one e.g.
+```
+const results = await api.foo().bar().done();
+```
 
 _"How does Fluentify know what return values to store for each call?"_ - another good question!
 
 ### callback(err, result)
 
-For each function in the chain Fluentify expects the final argument to be a callback. This callback is used to indicate the end of the function and can be used to propogate any return value(s) or error(s).
+For each function in the chain Fluentify expects the final argument to be a callback. The callback works just like any other in JavaScript i.e. passes control back to the caller and yields any results or errors.
 
-Given how standardised callbacks are these days in JavaScript Fluentify is smart enough figure out what your callback should look like. Therefore, it's not necessary to explicitly pass a callback to each function because Fluentify will inject a virtual one for you!
+For the most part, your callback is going to be the same for each function e.g. `cb => cb(...)`. To avoid having to repeat this boilerplate code in every call, simply omit the callback parameter and Fluentify will inject one for you.
 
-#### Example - virtual callback
+_Note - callback is required even for non-async code, this helps Fluentify retain order regardless of what type of code is being run_
+
+#### Example - implicit callback
 
 ```
 const fluentify = require('fluentifyjs');
 
-const fluentObj = fluentify({
+const api = fluentify({
   foo(cb) {
     // do cool stuff
     cb(null, 'foo');
@@ -68,7 +77,7 @@ const fluentObj = fluentify({
   }
 });
 
-fluentObj
+api
   .foo()
   .bar('1234')
   .done((err, ...results) => {
@@ -78,11 +87,11 @@ fluentObj
 ```
 _Notice in the above example we didn't pass a callback to either `foo` or `bar`_
 
-With that being said, sometimes you may want to explicitly pass a callback e.g. perhaps you want to do some pre-processing on the return value or dump some logs, Fluentify supports that to!
+If you do provide a callback, it's important to note that an _additional_ callback inside of this is required in order to pass context back to Fluentify.
 
 #### Example - explicit callback
 ```
-fluentObj
+api
   .foo()
   .bar('1234', (err, result, cb) => cb(err, `foo${result}`))
   .done((err, ...results) => {
@@ -90,20 +99,22 @@ fluentObj
     console.log(results[1][0]); // foobar
   });
 ```
-The most important point to note in the above example is the `cb` parameter in the callback. By passing an explicit callback you [take control away](https://www.youtube.com/watch?v=-dJolYw8tnk) from Fluentify because it can't be sure what's going on in there e.g. you might make an asynchronous call and need to wait for a reply or maybe you just need to do some stuff synchronously - we just don't know! So to remove any doubt, a callback is provided as a means of letting Fluentify know when your done so it can resume processing the remainder of the queue.
+By passing an explicit callback, you [take control away](https://www.youtube.com/watch?v=-dJolYw8tnk) from Fluentify as it can't be sure what's going on in your code, for example, you might make an asynchronous call and need to wait for a reply or just do some stuff synchronously. To remove any doubt, a callback is provided as a means of letting Fluentify know when your done so it can resume processing.
+
+_Note - the additional callback is injected automatically by Fluentify_
 
 ### Accessing results
 
-As discussed earlier, Fluentify will keep track of the result for each call in the chain and make them accessible when we call `done`. However, what if we need access to a particular result earlier than that? With Fluentify, we can use either FQL or `results`.
+As discussed earlier, Fluentify will keep track of each result and pass them to `done`. However, what if we need access to a particular result earlier than that? With Fluentify, you have two options - FQL or the `results` function.
 
 #### Fluentify Query Language (FQL)
 
-Fluentify has it's own little query language that it uses to resolve results to parameters on calls in the chain known as Fluentify Query Language. An FQL query will always start with `$<index>` which is interpreted as:
+Fluentify has it's own little query language that it uses to bind results to parameters on calls in the chain. An FQL query will always start with `$<index>`
 
 - `$` - prefix used to denote the start of an FQL query
-- `<index>` - index of the result we want to resolve
+- `<index>` - index of the call whose result we want to bind
 
-To demonstrate with an example, let's imagine the first call in your chain was an API call to fetch a user and the result of this call looked something like:
+For example, let's imagine the first call in your chain fetched a user model which looked like:
 ```
 {
   id: '12345',
@@ -111,42 +122,65 @@ To demonstrate with an example, let's imagine the first call in your chain was a
   email: 'bobby.tables@drop.com'
 }
 ```
-Lets assume in the next call in the chain you wanted access to this full result, using an FQL we can tell Fluentify the resolve the result of the `get` call to the first parameter in the `foo` call
+Then in the next call, you wanted access to this full result - here's how we'd do that using FQL:
 ```
-const api = {
+const fluentify = require('fluentifyjs');
+
+const api = fluentify({
   get(url, cb) { ... },
   foo(user, cb) { ... }
-}
+});
+
 api
   .get('/users/12345')
   .foo('$1')
   .done(...);
 ```
-So this is great if you need the _full_ result, however what if your only interested in part of the result? No problem! FQL supports deep indexing into the object tree e.g. lets assume we only need access to the users email in the `foo` call, in that case our FQL would look like `$1.email`, easy!
+In the above example, Fluentify will bind the result of the `get` call to the first parameter in the `foo` call.
 
-FQL also supports indexing into array properties, simply denote the index of the item in the array as if it were a property e.g. say the user had `emails` as opposed to `email` and we wanted to resolve the first one, our FQL would look like `$1.emails.0`.
+FQL supports deep indexing into the object tree. For example, lets assume we only need access to the users email in the `foo` call, in that case the FQL would look like `$1.email`, simple!
 
-There are no superficial limitations on how deep you can go, however, it's worth just bearing in mind that there is work involved in parsing & traversing the object tree so be smart about it.
+It also supports indexing into array properties by denoting the index of the item in the array as if it were a property e.g. `$1.list.0`.
 
-#### results(arr, cb)
+_Note - there are no limitations on how deep query into the object tree, however, please bear in mind that there is work involved in parsing & traversing so performance may be impacted_
 
-FQL works great when working with single results, however, perhaps you want to consolidate multiple results or maybe just want to log what results you've processed at any given point - in step the `results` function. Fluentify attaches this neat little function to the object and, when called, passes the current result collection as a parameter.
+#### results(resultset, cb)
 
-`results` has it's own callback which means it can also yield it's own result e.g.
+`results` is a utility function attached to the object by Fluentify and can be used as a way of peeking into underlying result set at a specific point in the chain. It's handled just like any other call in the chain therefore it has a callback and can yield it's own result
+```
+const fluentify = require('fluentifyjs');
+
+const api = fluentify({
+  foo(cb) {
+    return cb(null, 'foo');
+  },
+  bar(cb) {
+    return cb(null, 'bar');
+  }
+});
+
+api
+  .foo()
+  .bar()
+  .results((arr, cb) => cb(null, `${arr[0]}${arr[1]}`))
+  .done((err, foo, bar, foobar) => {
+    console.log(foo[0]); // foo
+    console.log(bar[0]); // bar
+    console.log(foobar[0]); // foobar
+  });
+```
+And since it yields it's own result, it means it can be used in conjunction with FQL
 ```
 api
-  .calcWidth()
-  .calcHeight()
-  .results((arr, cb) => {
-    cb(null, {
-      width: arr[0][0],
-      height: arr[1][0]
-    });
-  });
-  .setArea('$3')
-  .done(...);
+  .foo()
+  .bar()
+  .results((arr, cb) => cb(null, `${arr[0]}${arr[1]}`))
+  .consolidate('$3')
+  ...
 ```
-_In the above example, `$3` would resolve to `{ width: ..., height: ... }`_
+_Note - first parameter of `consolidate` would be `"foobar"`_
+
+And that's all folks! If you have any questions or aren't quite sure about how to use the library please get in touch, I'll be happy to help.
 
 ## Bugs :beetle:
 

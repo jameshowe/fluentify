@@ -97,4 +97,47 @@ describe('Fluentify API', () => {
 		expect(obj.results).to.be.a('function');
 	});
 
+	describe('#done', () => {
+
+		const obj = fluentify({
+			fooCalls: 0,
+			foo(delay, cb) {
+				++this.fooCalls;
+				return delay ? setTimeout(() => cb(null, this.fooCalls), delay) : cb(null, this.fooCalls);
+			}
+		});
+
+		beforeEach(() => {
+			obj.fooCalls = 0;
+		});
+		it('returns undefined when callback defined', () => {
+			expect(obj.done(() => {})).to.not.exist;
+		})
+		it('triggers callback when final call in the chain completes', done => {
+			obj.foo(0).foo(500).foo(1000).foo(0).done(err => {
+				expect(err, err).to.not.exist;
+				expect(obj.fooCalls).to.equal(4);
+				done();
+			});
+		});
+		it('binds results as callback parameters', done => {
+			obj.foo(0).foo(500).foo(1000).done((err, ...results) => {
+				expect(err, err).to.not.exist;
+				expect(results).to.eql([[1], [2], [3]]);
+				done();
+			});
+		});
+		it('returns Promise when no callback defined', () => {
+			expect(obj.done()).to.be.a('Promise');
+		});
+		it('resolves when final call in chain completes', async () => {
+			await obj.foo(0).foo(1000).foo(500).foo(0).done();
+			expect(obj.fooCalls).to.equal(4);
+		});
+		it('resolves with results', async () => {
+			const results = await obj.foo(0).foo(1000).foo(500).done();
+			expect(results).to.eql([[1], [2], [3]]);
+		});
+	});
+
 });

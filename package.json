@@ -1,17 +1,26 @@
 {
   "name": "fluentifyjs",
-  "version": "1.0.4",
+  "version": "1.1.0",
   "license": "MIT",
   "description": "A tiny fluent interface decorator for JavaScript objects",
   "repository": "https://github.com/jameshowe/fluentify",
+  "bugs": {
+    "url": "https://github.com/jameshowe/fluentify/issues"
+  },
+  "keywords": [
+    "fluent",
+    "fluentify",
+    "fluent interface",
+    "fluent api",
+    "api",
+    "decorator"
+  ],
   "author": "James Howe",
   "main": "fluentify.js",
   "scripts": {
     "test": "`npm bin`/mocha tests/* --reporter spec"
   },
-  "dependencies": {
-    "async": "^1.4.2"
-  },
+  "dependencies": {},
   "devDependencies": {
     "chai": "^3.5.0",
     "mocha": "^3.2.0",
