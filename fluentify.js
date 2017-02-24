@@ -3,6 +3,7 @@ const _getLast = arr => arr && arr.length ? arr[arr.length-1] : null
 const _isNumeric = val => typeof val === 'number' && !Number.isNaN(val);
 const _isFunc = func => typeof func === 'function';
 const _isRefParam = arg => typeof arg === 'string' && !arg.indexOf('$');
+const _shouldWrap = prop => _isFunc(prop[1]) && prop[0].indexOf('_') !== 0;
 
 class FluentSession {
 
@@ -98,14 +99,7 @@ const fluentify = obj => {
     session.queue((...args) => func.apply(context, args), args);
     return obj;
   };
-  // wrap functions
-  for (const prop in obj) {
-    const func = obj[prop];
-    // exclude non-function / private props
-    if (_isFunc(func) && prop.indexOf('_') !== 0) {
-      obj[prop] = _wrapFunc(obj, func);
-    }
-  }
+  Object.entries(obj).forEach(p => obj[p[0]] = (_shouldWrap(p)) ? _wrapFunc(obj, p[1]) : p[1]);
   obj.results = _wrapFunc(session, session.results);
   obj.done = session.done.bind(session);
   return obj;
