@@ -3,7 +3,7 @@ const _getLast = arr => arr && arr.length ? arr[arr.length-1] : null
 const _isNumeric = val => typeof val === 'number' && !Number.isNaN(val);
 const _isFunc = func => typeof func === 'function';
 const _isRefParam = arg => typeof arg === 'string' && !arg.indexOf('$');
-const _shouldWrap = prop => _isFunc(prop[1]) && prop[0].indexOf('_') !== 0;
+const _shouldWrap = (name, func) => _isFunc(func) && name.indexOf('_') !== 0;
 
 class FluentSession {
 
@@ -34,9 +34,9 @@ class FluentSession {
     }
 
     // traverse result based on path
-    Object.keys(propPath).forEach(k => {
-      const prop = _isNumeric(propPath[k]) ? Number.parseInt(propPath[k], 10) : propPath[k];
-      argValue = argValue[prop];
+    propPath.forEach(prop => {
+      const prpty = _isNumeric(prop) ? Number.parseInt(prop, 10) : prop;
+      argValue = argValue[prpty];
       if (!argValue) return;
     });
     target[i] = argValue;
@@ -99,7 +99,10 @@ const fluentify = obj => {
     session.queue((...args) => func.apply(context, args), args);
     return obj;
   };
-  Object.entries(obj).forEach(p => obj[p[0]] = (_shouldWrap(p)) ? _wrapFunc(obj, p[1]) : p[1]);
+  Object.entries(obj).forEach(props => {
+    const [k, v] = props;
+    obj[k] = (_shouldWrap(k, v)) ? _wrapFunc(obj, v) : v
+  });
   obj.results = _wrapFunc(session, session.results);
   obj.done = session.done.bind(session);
   return obj;
