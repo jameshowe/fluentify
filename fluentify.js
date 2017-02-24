@@ -2,6 +2,7 @@
 const _getLast = arr => arr && arr.length ? arr[arr.length-1] : null
 const _isNumeric = val => typeof val === 'number' && !Number.isNaN(val);
 const _isFunc = func => typeof func === 'function';
+const _isRefParam = arg => typeof arg === 'string' && !arg.indexOf('$');
 
 class FluentSession {
 
@@ -15,38 +16,34 @@ class FluentSession {
     return func.apply(null, args instanceof Array ? args : [args]);
   }
 
-  _bindResults(target) {
-    for (let i = 0; i < target.length; i++) {
-      const arg = target[i];
-      // detect result ref parmeters
-      if (typeof arg === 'string' && !arg.indexOf('$')) {
-        const propPath = arg.split('.');
-        // extract index
-        const indexStr = propPath.shift();
-        let index = Number.parseInt(indexStr.substring(1), 10);
-        if (_isNumeric(index) && --index < this._results.length) {
-          let argValue = this._results[index];
-          // unpack single resultsets
-          if (argValue && argValue.length === 1) {
-            argValue = argValue[0];
-          }
-          // traverse result based on path
-          for (let prop of propPath) {
-            prop = _isNumeric(prop) ? Number.parseInt(prop, 10) : prop;
-            argValue = argValue[prop];
-            if (!argValue) {
-              break;
-            }
-          }
-          target[i] = argValue;
-        }
-      }
+  _bindResult(arg, i, target) {
+    if (!_isRefParam(arg)) return;
+
+    const propPath = arg.split('.');
+    // extract index
+    const indexStr = propPath.shift();
+    let index = Number.parseInt(indexStr.substring(1), 10);
+
+    if (!(_isNumeric(index) && --index < this._results.length)) return;
+
+    let argValue = this._results[index];
+    // unpack single resultsets
+    if (argValue && argValue.length === 1) {
+      argValue = argValue[0];
     }
+
+    // traverse result based on path
+    Object.keys(propPath).forEach(k => {
+      const prop = _isNumeric(propPath[k]) ? Number.parseInt(propPath[k], 10) : propPath[k];
+      argValue = argValue[prop];
+      if (!argValue) return;
+    });
+    target[i] = argValue;
   }
 
   queue(func, args) {
     this._queue.push(() => new Promise((resolve, reject) => {
-      this._bindResults(args);
+      args.forEach(this._bindResult.bind(this));
       let callback = (err, ...results) => err ? reject(err) : resolve(results);
       const lastArg = _getLast(args);
       if (_isFunc(lastArg)) {
@@ -77,7 +74,7 @@ class FluentSession {
   }
 
   done(cb) {
-    let p = new Promise(async (resolve, reject) => {
+    const p = new Promise(async (resolve, reject) => {
       try {
         await this._processQueue();
         return resolve(this._results.slice());
