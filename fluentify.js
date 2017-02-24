@@ -35,8 +35,7 @@ class FluentSession {
 
     // traverse result based on path
     propPath.forEach(prop => {
-      const prpty = _isNumeric(prop) ? Number.parseInt(prop, 10) : prop;
-      argValue = argValue[prpty];
+      argValue = argValue[_isNumeric(prop) ? Number.parseInt(prop, 10) : prop];
       if (!argValue) return;
     });
     target[i] = argValue;
